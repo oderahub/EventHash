@@ -1,7 +1,7 @@
 'use client';
 
 import { ChatMessage } from '@/shared/types';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useHandleChat } from '@/lib/handle-chat';
 import { ChatInput } from '@/components/chat-input';
 import { Header } from '@/components/header';
