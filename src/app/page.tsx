@@ -64,7 +64,6 @@ export default function Home() {
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-neon-accent">EventHash</h1>
             </div>
-            
             <div className="hidden md:flex items-center space-x-8">
               <a href="#discover" className="text-foreground hover:text-neon-accent transition-colors">
                 Discover events
@@ -72,21 +71,12 @@ export default function Home() {
               <a href="#how-it-works" className="text-foreground hover:text-neon-accent transition-colors">
                 How It Works
               </a>
-              <a href="#pricing" className="text-foreground hover:text-neon-accent transition-colors">
-                Pricing
-              </a>
               <a href="#about" className="text-foreground hover:text-neon-accent transition-colors">
                 About
               </a>
-              <a href="#blog" className="text-foreground hover:text-neon-accent transition-colors">
-                Blog
-              </a>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <button className="text-foreground hover:text-neon-accent transition-colors">
-                Login
-              </button>
+            <div className="flex items-center">
               <WalletButton />
             </div>
           </div>
@@ -121,7 +111,7 @@ export default function Home() {
               Explore Events
             </button>
             
-            <WalletButton />
+            {/* <WalletButton /> */}
           </div>
         </div>
       </section>

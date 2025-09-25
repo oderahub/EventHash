@@ -56,22 +56,20 @@ export function ChatInterface() {
     ]);
 
     try {
-      // Check if wallet is connected for transaction commands
-      if (currentPrompt.includes('/create') || currentPrompt.includes('/buy') || currentPrompt.includes('/check')) {
-        if (!userAccountId) {
-          setChatHistory((prev) => [
-            ...prev,
-            {
-              type: 'ai',
-              content: 'Please connect your wallet to perform blockchain transactions. Click the "Connect Wallet" button in the top navigation.',
-            },
-          ]);
-          return;
-        }
+      // Check if wallet is connected for any request
+      if (!userAccountId) {
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            type: 'ai',
+            content: 'Please connect your wallet to use HashBot. Click the "Connect Wallet" button in the top navigation to get started.',
+          },
+        ]);
+        return;
       }
 
       const agentResponse = await mutateAsync({
-        userAccountId: userAccountId || '',
+        userAccountId: userAccountId,
         input: currentPrompt,
         history: chatHistory,
       });
@@ -86,22 +84,33 @@ export function ChatInterface() {
 
       // Handle transaction signing if needed
       if (agentResponse.transactionBytes && dAppConnector) {
-        const result = await dAppConnector.signAndExecuteTransaction({
-          signerAccountId: userAccountId || '',
-          transactionList: agentResponse.transactionBytes,
-        });
-        
-        const transactionId = 'transactionId' in result ? result.transactionId : null;
+        try {
+          const result = await dAppConnector.signAndExecuteTransaction({
+            signerAccountId: userAccountId,
+            transactionList: agentResponse.transactionBytes,
+          });
+          
+          const transactionId = 'transactionId' in result ? result.transactionId : null;
 
-        setChatHistory((prev) => [
-          ...prev,
-          {
-            type: 'ai',
-            content: `✅ Transaction signed and executed successfully! Transaction ID: ${transactionId}`,
-          },
-        ]);
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              type: 'ai',
+              content: `✅ Transaction signed and executed successfully! Transaction ID: ${transactionId}`,
+            },
+          ]);
+        } catch (txError) {
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              type: 'ai',
+              content: `❌ Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown transaction error'}`,
+            },
+          ]);
+        }
       }
     } catch (error) {
+      console.error('Chat error:', error);
       setChatHistory((prev) => [
         ...prev,
         {
