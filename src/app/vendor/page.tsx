@@ -32,6 +32,14 @@ export default function VendorPage() {
     'Create a music concert in Lagos next Friday under 50 HBAR, capacity 500',
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+const [deployInfo, setDeployInfo] = useState<{ eventId: string; topicId: string; transactionId: string } | null>(null);
+
+// helper
+const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
+  setToast({ type, text });
+  setTimeout(() => setToast(null), ms);
+};
 
   const onPickBanner = () => fileInputRef.current?.click();
 
@@ -50,9 +58,9 @@ export default function VendorPage() {
       if (!res.ok || !data?.success) throw new Error(data?.error || 'Upload failed');
 
       setDraft((d) => ({ ...d, bannerUrl: data.url as string }));
-      setMessage('Banner uploaded successfully.');
+      showToast('success', 'Banner uploaded successfully.');
     } catch (err: any) {
-      setMessage(err?.message || 'Upload failed');
+      showToast('error', err?.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -81,9 +89,9 @@ export default function VendorPage() {
         price: typeof data.price === 'number' ? data.price : d.price,
         category: data.category ?? d.category,
       }));
-      setMessage('Draft auto-filled from AI extraction. Review and adjust if needed.');
+      showToast('success', 'Draft auto-filled from AI extraction. Review and adjust if needed.');
     } catch (err: any) {
-      setMessage(err?.message || 'Failed to extract draft');
+      showToast('error', err?.message || 'Failed to extract draft');
     } finally {
       setExtracting(false);
     }
@@ -91,17 +99,17 @@ export default function VendorPage() {
 
   const createEvent = async () => {
     if (!draft.name || !draft.description || !draft.date || !draft.location) {
-      setMessage('Please fill in name, description, date, and location.');
+      showToast('error', 'Please fill in name, description, date, and location.');
       return;
     }
     if (Number.isNaN(draft.price) || draft.price < 0) {
-      setMessage('Price must be a non-negative number.');
+      showToast('error', 'Price must be a non-negative number.');
       return;
     }
 
     try {
       setCreating(true);
-      setMessage(null);
+      showToast('success', 'Draft saved! Event will appear in marketplace once we wire the marketplace view.');
       const payload = {
         name: draft.name,
         description: draft.description,
@@ -121,9 +129,9 @@ export default function VendorPage() {
       if (!res.ok || !data?.success)
         throw new Error(data?.error ? JSON.stringify(data.error) : 'Failed to create event');
 
-      setMessage('Draft saved! Event will appear in marketplace once we wire the marketplace view.');
+      showToast('success', 'Draft saved! Event will appear in marketplace once we wire the marketplace view.');
     } catch (err: any) {
-      setMessage(err?.message || 'Failed to create event');
+      showToast('error', err?.message || 'Failed to create event');
     } finally {
       setCreating(false);
     }
@@ -131,20 +139,32 @@ export default function VendorPage() {
 
   const deployOnChain = async () => {
     if (!draft.name || !draft.description || !draft.date || !draft.location) {
-      setMessage('Please fill in name, description, date, and location.');
+      showToast('error', 'Please fill in name, description, date, and location.');
       return;
     }
     if (Number.isNaN(draft.price) || draft.price < 0) {
-      setMessage('Price must be a non-negative number.');
+      showToast('error', 'Price must be a non-negative number.');
       return;
     }
     if (!draft.capacity || draft.capacity <= 0) {
-      setMessage('Capacity must be a positive integer.');
+      showToast('error', 'Capacity must be a positive integer.');
       return;
     }
     try {
       setCreating(true);
-      setMessage(null);
+      setDeployInfo(null);
+  
+      // Pre-deploy env guard
+      const health = await fetch('/api/events/deploy', { method: 'GET' });
+      if (!health.ok) {
+        const j = await health.json().catch(() => ({}));
+        showToast(
+          'error',
+          j?.error || 'Deploy API not ready. Please set HEDERA_ACCOUNT_ID and HEDERA_PRIVATE_KEY in .env and restart.'
+        );
+        return;
+      }
+  
       const payload = {
         name: draft.name,
         description: draft.description,
@@ -154,7 +174,7 @@ export default function VendorPage() {
         maxTickets: Number(draft.capacity),
         category: draft.category || 'General',
         bannerUrl: draft.bannerUrl,
-        // eventAdmin is optional; server will default to HEDERA_ACCOUNT_ID
+        // server defaults eventAdmin to env operator if not provided
       };
       const res = await fetch('/api/events/deploy', {
         method: 'POST',
@@ -162,10 +182,22 @@ export default function VendorPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok || !data?.success) throw new Error(data?.error ? JSON.stringify(data.error) : 'Deploy failed');
-      setMessage('Event deployed on-chain and saved! Hedera IDs attached.');
+  
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error ? JSON.stringify(data.error) : 'Deploy failed');
+      }
+  
+      // Save onchain IDs to show in confirmation panel
+      const onchain = data.onchain ?? {};
+      setDeployInfo({
+        eventId: onchain.eventId,
+        topicId: onchain.topicId,
+        transactionId: onchain.transactionId,
+      });
+  
+      showToast('success', 'Event deployed on-chain and saved! Hedera IDs attached.');
     } catch (err: any) {
-      setMessage(err?.message || 'Failed to deploy event');
+      showToast('error', err?.message || 'Failed to deploy event');
     } finally {
       setCreating(false);
     }
@@ -173,6 +205,15 @@ export default function VendorPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+        {toast && (
+  <div
+    className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg ${
+      toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+    }`}
+  >
+    {toast.text}
+  </div>
+)}
       <h1 className="text-2xl font-semibold mb-6">Vendor Dashboard</h1>
 
       {/* Layout: AI assistant on the left, draft form on the right */}
@@ -343,7 +384,7 @@ export default function VendorPage() {
               </button>
             </div>
 
-
+            {message && <div className="mt-2 text-sm text-gray-700">{message}</div>}
           </div>
         </div>
       </div>
@@ -389,8 +430,6 @@ export default function VendorPage() {
           </div>
         </div>
       )}
-
-      
     </div>
   );
 }
