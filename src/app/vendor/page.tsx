@@ -2,6 +2,25 @@
 
 import { useRef, useState } from 'react';
 
+// Add proper interface definitions
+interface DeployInfo {
+  eventId: string;
+  topicId: string;
+  transactionId: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data?: unknown;
+  error?: unknown;
+  url?: string;
+  onchain?: DeployInfo;
+}
+
+interface ApiError extends Error {
+  message: string;
+}
+
 type Draft = {
   name: string;
   description: string;
@@ -33,13 +52,13 @@ export default function VendorPage() {
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-const [deployInfo, setDeployInfo] = useState<{ eventId: string; topicId: string; transactionId: string } | null>(null);
+  const [deployInfo, setDeployInfo] = useState<DeployInfo | null>(null);
 
-// helper
-const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
-  setToast({ type, text });
-  setTimeout(() => setToast(null), ms);
-};
+  // helper
+  const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
+    setToast({ type, text });
+    setTimeout(() => setToast(null), ms);
+  };
 
   const onPickBanner = () => fileInputRef.current?.click();
 
@@ -54,13 +73,14 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
       form.append('folder', 'events/banners');
 
       const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const data = await res.json();
-      if (!res.ok || !data?.success) throw new Error(data?.error || 'Upload failed');
+      const data: ApiResponse = await res.json();
+      if (!res.ok || !data?.success) throw new Error((data?.error as string) || 'Upload failed');
 
       setDraft((d) => ({ ...d, bannerUrl: data.url as string }));
       showToast('success', 'Banner uploaded successfully.');
-    } catch (err: any) {
-      showToast('error', err?.message || 'Upload failed');
+    } catch (err) {
+      const error = err as ApiError;
+      showToast('error', error?.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -75,7 +95,7 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: aiPrompt }),
       });
-      const json = await res.json();
+      const json: ApiResponse = await res.json();
       if (!res.ok || !json?.success)
         throw new Error(json?.error ? JSON.stringify(json.error) : 'Extraction failed');
 
@@ -90,8 +110,9 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
         category: data.category ?? d.category,
       }));
       showToast('success', 'Draft auto-filled from AI extraction. Review and adjust if needed.');
-    } catch (err: any) {
-      showToast('error', err?.message || 'Failed to extract draft');
+    } catch (err) {
+      const error = err as ApiError;
+      showToast('error', error?.message || 'Failed to extract draft');
     } finally {
       setExtracting(false);
     }
@@ -109,7 +130,6 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
 
     try {
       setCreating(true);
-      showToast('success', 'Draft saved! Event will appear in marketplace once we wire the marketplace view.');
       const payload = {
         name: draft.name,
         description: draft.description,
@@ -125,13 +145,17 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data: ApiResponse = await res.json();
       if (!res.ok || !data?.success)
         throw new Error(data?.error ? JSON.stringify(data.error) : 'Failed to create event');
 
-      showToast('success', 'Draft saved! Event will appear in marketplace once we wire the marketplace view.');
-    } catch (err: any) {
-      showToast('error', err?.message || 'Failed to create event');
+      showToast(
+        'success',
+        'Draft saved! Event will appear in marketplace once we wire the marketplace view.',
+      );
+    } catch (err) {
+      const error = err as ApiError;
+      showToast('error', error?.message || 'Failed to create event');
     } finally {
       setCreating(false);
     }
@@ -153,18 +177,19 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
     try {
       setCreating(true);
       setDeployInfo(null);
-  
+
       // Pre-deploy env guard
       const health = await fetch('/api/events/deploy', { method: 'GET' });
       if (!health.ok) {
         const j = await health.json().catch(() => ({}));
         showToast(
           'error',
-          j?.error || 'Deploy API not ready. Please set HEDERA_ACCOUNT_ID and HEDERA_PRIVATE_KEY in .env and restart.'
+          j?.error ||
+            'Deploy API not ready. Please set HEDERA_ACCOUNT_ID and HEDERA_PRIVATE_KEY in .env and restart.',
         );
         return;
       }
-  
+
       const payload = {
         name: draft.name,
         description: draft.description,
@@ -181,23 +206,32 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-  
+      const data: ApiResponse = await res.json();
+
       if (!res.ok || !data?.success) {
         throw new Error(data?.error ? JSON.stringify(data.error) : 'Deploy failed');
       }
-  
-      // Save onchain IDs to show in confirmation panel
-      const onchain = data.onchain ?? {};
-      setDeployInfo({
-        eventId: onchain.eventId,
-        topicId: onchain.topicId,
-        transactionId: onchain.transactionId,
-      });
-  
+
+      // Fix: Properly handle the onchain data with type checking
+      if (data.onchain) {
+        setDeployInfo({
+          eventId: data.onchain.eventId || '',
+          topicId: data.onchain.topicId || '',
+          transactionId: data.onchain.transactionId || '',
+        });
+      } else {
+        // Fallback if onchain data is missing
+        setDeployInfo({
+          eventId: 'Unknown',
+          topicId: 'Unknown',
+          transactionId: 'Unknown',
+        });
+      }
+
       showToast('success', 'Event deployed on-chain and saved! Hedera IDs attached.');
-    } catch (err: any) {
-      showToast('error', err?.message || 'Failed to deploy event');
+    } catch (err) {
+      const error = err as ApiError;
+      showToast('error', error?.message || 'Failed to deploy event');
     } finally {
       setCreating(false);
     }
@@ -205,16 +239,35 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-        {toast && (
-  <div
-    className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg ${
-      toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-    }`}
-  >
-    {toast.text}
-  </div>
-)}
+      {toast && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg ${
+            toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+          }`}
+        >
+          {toast.text}
+        </div>
+      )}
+
       <h1 className="text-2xl font-semibold mb-6">Vendor Dashboard</h1>
+
+      {/* Display deployment info if available */}
+      {deployInfo && (
+        <div className="mb-6 glass rounded-xl p-4">
+          <h3 className="text-lg font-medium mb-2 text-green-600">Deployment Successful!</h3>
+          <div className="space-y-1 text-sm">
+            <div>
+              <span className="font-medium">Event ID:</span> {deployInfo.eventId}
+            </div>
+            <div>
+              <span className="font-medium">Topic ID:</span> {deployInfo.topicId}
+            </div>
+            <div>
+              <span className="font-medium">Transaction ID:</span> {deployInfo.transactionId}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Layout: AI assistant on the left, draft form on the right */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -396,7 +449,11 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
             <div className="md:col-span-1">
               {draft.bannerUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={draft.bannerUrl} alt="banner" className="w-full h-48 object-cover rounded-lg" />
+                <img
+                  src={draft.bannerUrl}
+                  alt="banner"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
               ) : (
                 <div className="w-full h-48 rounded-lg bg-gray-200 flex items-center justify-center text-gray-600">
                   No banner
@@ -424,7 +481,9 @@ const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
               </div>
               <div>
                 <div className="font-medium">Description:</div>
-                <div className="text-sm text-gray-700 whitespace-pre-wrap">{draft.description || '—'}</div>
+                <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {draft.description || '—'}
+                </div>
               </div>
             </div>
           </div>

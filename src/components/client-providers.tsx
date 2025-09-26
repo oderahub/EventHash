@@ -10,6 +10,21 @@ import {
 } from '@hashgraph/hedera-wallet-connect';
 import { LedgerId } from '@hashgraph/sdk';
 
+// Add proper interface definitions
+interface WalletEvent {
+  name: string;
+  data: {
+    topic?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface DAppConnectorWithEvents extends DAppConnector {
+  events$?: {
+    subscribe: (callback: (event: WalletEvent) => void) => { unsubscribe: () => void };
+  };
+}
+
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID ?? '';
 const queryClient = new QueryClient();
 
@@ -44,7 +59,10 @@ export function ClientProviders({ children }: ClientProvidersProps) {
   // Listen for account/session changes using events$
   useEffect(() => {
     if (!dAppConnector) return;
-    const subscription = (dAppConnector as any).events$?.subscribe((event: { name: string; data: any }) => {
+
+    // Fix: Replace 'any' with proper interface
+    const connectorWithEvents = dAppConnector as DAppConnectorWithEvents;
+    const subscription = connectorWithEvents.events$?.subscribe((event: WalletEvent) => {
       if (event.name === 'accountsChanged' || event.name === 'chainChanged') {
         setUserAccountId(dAppConnector.signers?.[0]?.getAccountId().toString() ?? null);
         // Try to get topic from event data
@@ -60,6 +78,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         setSessionTopic(null);
       }
     });
+
     // Set initial state
     setUserAccountId(dAppConnector.signers?.[0]?.getAccountId().toString() ?? null);
     if (dAppConnector.signers?.[0]?.topic) setSessionTopic(dAppConnector.signers[0].topic);
@@ -114,7 +133,9 @@ export function ClientProviders({ children }: ClientProvidersProps) {
     );
 
   return (
-    <DAppConnectorContext.Provider value={{ dAppConnector, userAccountId, sessionTopic, disconnect, refresh }}>
+    <DAppConnectorContext.Provider
+      value={{ dAppConnector, userAccountId, sessionTopic, disconnect, refresh }}
+    >
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </DAppConnectorContext.Provider>
   );

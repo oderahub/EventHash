@@ -8,6 +8,33 @@ export const runtime = 'nodejs';
 
 const dataFile = path.join(process.cwd(), 'src', 'shared', 'data', 'events.json');
 
+// Add proper type definitions
+interface Event {
+  id: string;
+  name: string;
+  description: string;
+  date: number;
+  location: string;
+  price: number;
+  category: string;
+  bannerUrl?: string;
+  vendorAccountId?: string;
+  hederaEventId: string;
+  hederaTopicId: string;
+  hederaTransactionId: string;
+  createdAt: number;
+}
+
+interface FileSystemError extends Error {
+  code?: string;
+}
+
+interface HederaEventResult {
+  eventId: string;
+  topicId: { toString(): string };
+  transactionId: string;
+}
+
 const DeploySchema = z.object({
   name: z.string().min(3),
   description: z.string().min(10),
@@ -21,22 +48,26 @@ const DeploySchema = z.object({
   vendorAccountId: z.string().optional(),
 });
 
-async function readEvents(): Promise<any[]> {
+// Line 24: Replace any[] with Event[]
+async function readEvents(): Promise<Event[]> {
   try {
     const raw = await fs.readFile(dataFile, 'utf-8');
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch (err: any) {
-    if (err.code === 'ENOENT') {
+  } catch (err) {
+    // Line 29: Replace any with FileSystemError
+    const error = err as FileSystemError;
+    if (error.code === 'ENOENT') {
       await fs.mkdir(path.dirname(dataFile), { recursive: true });
       await fs.writeFile(dataFile, '[]', 'utf-8');
       return [];
     }
-    throw err;
+    throw error;
   }
 }
 
-async function writeEvents(events: any[]): Promise<void> {
+// Line 39: Replace any[] with Event[]
+async function writeEvents(events: Event[]): Promise<void> {
   const json = JSON.stringify(events, null, 2);
   await fs.writeFile(dataFile, json, 'utf-8');
 }
@@ -51,17 +82,14 @@ export async function POST(req: NextRequest) {
     if (!process.env.HEDERA_ACCOUNT_ID || !process.env.HEDERA_PRIVATE_KEY) {
       return NextResponse.json(
         { success: false, error: 'Missing HEDERA_ACCOUNT_ID or HEDERA_PRIVATE_KEY in environment' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     const body = await req.json();
     const parsed = DeploySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 });
     }
 
     const input = parsed.data;
@@ -71,7 +99,8 @@ export async function POST(req: NextRequest) {
     const eventAdmin = input.eventAdmin || process.env.HEDERA_ACCOUNT_ID!;
 
     const eventService = new HederaEventService();
-    const result = await eventService.createEvent({
+    // Line 117: Replace any with HederaEventResult
+    const result: HederaEventResult = await eventService.createEvent({
       name: input.name,
       description: input.description,
       date: timestamp,
@@ -82,7 +111,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Persist locally to power marketplace list
-    const newEvent = {
+    const newEvent: Event = {
       id: genId(),
       name: input.name,
       description: input.description,
@@ -112,28 +141,33 @@ export async function POST(req: NextRequest) {
           transactionId: result.transactionId,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error) {
+    // Line 133: Replace any with unknown, then type guard
+    const err = error as Error;
     return NextResponse.json(
-      { success: false, error: error?.message ?? 'Failed to deploy event' },
-      { status: 500 }
+      { success: false, error: err?.message ?? 'Failed to deploy event' },
+      { status: 500 },
     );
   }
 }
+
 export async function GET() {
-    try {
-      if (!process.env.HEDERA_ACCOUNT_ID || !process.env.HEDERA_PRIVATE_KEY) {
-        return NextResponse.json(
-          { ok: false, error: 'Missing HEDERA_ACCOUNT_ID or HEDERA_PRIVATE_KEY in environment' },
-          { status: 500 }
-        );
-      }
-      return NextResponse.json({ ok: true, message: 'Deploy API ready' });
-    } catch (error: any) {
+  try {
+    if (!process.env.HEDERA_ACCOUNT_ID || !process.env.HEDERA_PRIVATE_KEY) {
       return NextResponse.json(
-        { ok: false, error: error?.message ?? 'Deploy API health-check failed' },
-        { status: 500 }
+        { ok: false, error: 'Missing HEDERA_ACCOUNT_ID or HEDERA_PRIVATE_KEY in environment' },
+        { status: 500 },
       );
     }
+    return NextResponse.json({ ok: true, message: 'Deploy API ready' });
+  } catch (error) {
+    // Fix the GET error handler as well
+    const err = error as Error;
+    return NextResponse.json(
+      { ok: false, error: err?.message ?? 'Deploy API health-check failed' },
+      { status: 500 },
+    );
   }
+}

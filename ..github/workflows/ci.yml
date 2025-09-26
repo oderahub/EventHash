@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Setup Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: npm install
+
+      # Run ESLint for linting
+      - name: Lint Code
+        run: npm run lint
+
+      # (Optional) Run tests
+      # - name: Run Tests
+      #   run: npm test
+
+      # Build the project
+      - name: Build Project
+        run: npm run build
+        env:
+          NODE_ENV: production
+
