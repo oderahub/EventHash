@@ -52,138 +52,62 @@ export default async function EventsPage() {
 
   const EventCard = ({ evt, isDraft = false }: { evt: Event; isDraft?: boolean }) => {
     const eventId = evt.hederaEventId || evt.hederaTopicId || evt.id;
-    const hasTickets = Boolean(evt.hederaTicketTokenId);
 
     return (
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-        {/* Banner Image */}
-        <div className="aspect-video w-full rounded-t-xl bg-gray-100 overflow-hidden">
+      <Link
+        href={`/events/${encodeURIComponent(eventId)}`}
+        className="block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow bg-black"
+      >
+        <div className="relative w-full aspect-[4/3]">
           {evt.bannerUrl ? (
             <Image
               src={evt.bannerUrl}
               alt={evt.name}
-              width={400}
-              height={225}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              className="object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <div className="text-3xl mb-2">🎫</div>
-                <div className="text-sm">No banner</div>
-              </div>
-            </div>
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">🎫</div>
           )}
-        </div>
-
-        {/* Card Content */}
-        <div className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-1">{evt.name}</h3>
-              {evt.category && (
-                <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                  {evt.category}
-                </span>
-              )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
+            <div className="text-[10px] tracking-widest text-white/80 font-semibold uppercase mb-2">
+              Highlighted Event
             </div>
-            {isDraft && (
-              <span className="inline-block px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full ml-2">
-                Draft
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-2 text-sm text-gray-600 mb-4">
-            <div className="flex items-center">
-              <span className="w-4 h-4 mr-2">📅</span>
-              {formatDate(evt.date)}
+            <div className="text-white font-semibold text-lg md:text-xl leading-tight line-clamp-2">
+              {evt.name}
             </div>
-            <div className="flex items-center">
-              <span className="w-4 h-4 mr-2">📍</span>
-              {evt.location}
-            </div>
-            <div className="flex items-center">
-              <span className="w-4 h-4 mr-2">💰</span>
-              <span className="font-medium text-gray-900">{evt.price} HBAR</span>
-            </div>
-          </div>
-
-          {/* Blockchain Status */}
-          {!isDraft && (
-            <div className="mb-4 p-2 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Blockchain Status:</span>
-                <div className="flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-                  <span className="text-green-700 font-medium">Deployed</span>
-                </div>
-              </div>
-              <div className="mt-1 text-xs text-gray-600">
-                Topic:
-                <a
-                  href={topicUrl(eventId)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline ml-1"
-                >
-                  {eventId.slice(0, 10)}...
-                </a>
-              </div>
-              {hasTickets && <div className="text-xs text-green-600 mt-1">✓ Tickets Available</div>}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Link
-              href={`/events/${encodeURIComponent(eventId)}`}
-              className="flex-1 text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              {isDraft ? 'View Details' : hasTickets ? 'View & Buy' : 'View Event'}
-            </Link>
-
-            {!isDraft && hasTickets && (
-              <div className="text-xs text-center py-2 px-3 text-green-700 bg-green-50 rounded-lg font-medium">
-                Tickets Ready
-              </div>
-            )}
+            <div className="mt-1 text-white/90 text-sm">{formatDate(evt.date)}</div>
           </div>
         </div>
-      </div>
+      </Link>
     );
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 py-8 bg-white min-h-screen">
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Events</h1>
-        <p className="text-gray-600">
-          Find and purchase tickets for events on the Hedera blockchain
-        </p>
+        <p className="text-gray-600">Find and purchase tickets for events on the Hedera blockchain</p>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="text-2xl font-bold text-blue-600">{events.length}</div>
-          <div className="text-gray-600">Total Events</div>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="text-2xl font-bold text-green-600">{deployedEvents.length}</div>
-          <div className="text-gray-600">Live on Hedera</div>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <div className="text-2xl font-bold text-orange-600">
-            {deployedEvents.filter((e) => e.hederaTicketTokenId).length}
-          </div>
-          <div className="text-gray-600">With Tickets Available</div>
-        </div>
+      {/* Simple filter pills for the feel */}
+      <div className="mb-8 flex flex-wrap items-center gap-3">
+        <button className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:border-gray-400">
+          All Events
+        </button>
+        <button className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:border-gray-400">
+          Price
+        </button>
+        <button className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-sm font-medium hover:border-gray-400">
+          Date
+        </button>
       </div>
 
       {events.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="text-gray-400 text-5xl mb-4">🎫</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Events Yet</h3>
           <p className="text-gray-600 mb-6">Be the first to create an event on our platform!</p>
@@ -196,17 +120,10 @@ export default async function EventsPage() {
         </div>
       ) : (
         <>
-          {/* Live Events Section */}
+          {/* Live Events */}
           {deployedEvents.length > 0 && (
             <div className="mb-12">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">Live Events</h2>
-                <div className="flex items-center text-sm text-gray-600">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  Deployed on Hedera
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {deployedEvents.map((evt) => (
                   <EventCard key={evt.id} evt={evt} />
                 ))}
@@ -214,17 +131,11 @@ export default async function EventsPage() {
             </div>
           )}
 
-          {/* Draft Events Section */}
+          {/* Draft Events */}
           {draftEvents.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">Draft Events</h2>
-                <div className="flex items-center text-sm text-gray-600">
-                  <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                  Not yet deployed
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Draft Events</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {draftEvents.map((evt) => (
                   <EventCard key={evt.id} evt={evt} isDraft />
                 ))}
@@ -235,7 +146,7 @@ export default async function EventsPage() {
       )}
 
       {/* Footer CTA */}
-      <div className="mt-16 text-center bg-white rounded-xl p-8 shadow-sm">
+      <div className="mt-16 text-center bg-gray-50 rounded-2xl p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Ready to host your own event?</h3>
         <p className="text-gray-600 mb-6">
           Create events, deploy them on Hedera, and sell NFT tickets seamlessly.
