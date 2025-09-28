@@ -9,6 +9,7 @@ import {
   HederaChainId,
 } from '@hashgraph/hedera-wallet-connect';
 import { LedgerId } from '@hashgraph/sdk';
+import { LoadingSpinner } from './loading-spinner';
 
 
 interface WalletEvent {
@@ -127,9 +128,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
 
   if (!isReady)
     return (
-      <div style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>
-        Loading wallet...
-      </div>
+      <LoadingSpinner />
     );
 
   return (
