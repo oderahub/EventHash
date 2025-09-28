@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 
 const NETWORK = (process.env.NEXT_PUBLIC_HEDERA_NETWORK || 'testnet').toLowerCase();
 const hashscanBase = `https://hashscan.io/${NETWORK}`;
-const topicUrl = (id: string) => `${hashscanBase}/topic/${id}`;
 
 interface Event {
   id: string;
@@ -52,6 +51,7 @@ export default async function EventsPage() {
 
   const EventCard = ({ evt, isDraft = false }: { evt: Event; isDraft?: boolean }) => {
     const eventId = evt.hederaEventId || evt.hederaTopicId || evt.id;
+    const topicUrl = `${hashscanBase}/topic/${evt.hederaTopicId || evt.hederaEventId}`;
 
     return (
       <Link
@@ -68,17 +68,32 @@ export default async function EventsPage() {
               className="object-cover"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">🎫</div>
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+              🎫
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
             <div className="text-[10px] tracking-widest text-white/80 font-semibold uppercase mb-2">
-              Highlighted Event
+              {isDraft ? 'Draft Event' : 'Live Event'}
             </div>
             <div className="text-white font-semibold text-lg md:text-xl leading-tight line-clamp-2">
               {evt.name}
             </div>
             <div className="mt-1 text-white/90 text-sm">{formatDate(evt.date)}</div>
+            {!isDraft && evt.hederaTopicId && (
+              <div className="mt-2">
+                <a
+                  href={topicUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-white/70 hover:text-white underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  View on HashScan
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </Link>
@@ -90,7 +105,9 @@ export default async function EventsPage() {
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Events</h1>
-        <p className="text-gray-600">Find and purchase tickets for events on the Hedera blockchain</p>
+        <p className="text-gray-600">
+          Find and purchase tickets for events on the Hedera blockchain
+        </p>
       </div>
 
       {/* Simple filter pills for the feel */}
@@ -123,6 +140,7 @@ export default async function EventsPage() {
           {/* Live Events */}
           {deployedEvents.length > 0 && (
             <div className="mb-12">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Live Events</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {deployedEvents.map((evt) => (
                   <EventCard key={evt.id} evt={evt} />
