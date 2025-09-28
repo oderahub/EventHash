@@ -10,7 +10,7 @@ import {
 } from '@hashgraph/hedera-wallet-connect';
 import { LedgerId } from '@hashgraph/sdk';
 
-// Add proper interface definitions
+
 interface WalletEvent {
   name: string;
   data: {
@@ -60,12 +60,12 @@ export function ClientProviders({ children }: ClientProvidersProps) {
   useEffect(() => {
     if (!dAppConnector) return;
 
-    // Fix: Replace 'any' with proper interface
+   
     const connectorWithEvents = dAppConnector as DAppConnectorWithEvents;
     const subscription = connectorWithEvents.events$?.subscribe((event: WalletEvent) => {
       if (event.name === 'accountsChanged' || event.name === 'chainChanged') {
         setUserAccountId(dAppConnector.signers?.[0]?.getAccountId().toString() ?? null);
-        // Try to get topic from event data
+      
         if (event.data && event.data.topic) {
           setSessionTopic(event.data.topic);
         } else if (dAppConnector.signers?.[0]?.topic) {

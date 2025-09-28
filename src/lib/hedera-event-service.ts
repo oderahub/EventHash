@@ -46,10 +46,19 @@ export class HederaEventService {
   constructor() {
     const operatorId = process.env.HEDERA_ACCOUNT_ID;
     const operatorKey = process.env.HEDERA_PRIVATE_KEY;
+    const network = (process.env.HEDERA_NETWORK || 'testnet').toLowerCase();
+
     if (!operatorId || !operatorKey) {
       throw new Error('Missing HEDERA_ACCOUNT_ID or HEDERA_PRIVATE_KEY in environment variables.');
     }
-    this.client = Client.forTestnet();
+
+    this.client =
+      network === 'mainnet'
+        ? Client.forMainnet()
+        : network === 'previewnet'
+          ? Client.forPreviewnet()
+          : Client.forTestnet();
+
     this.operatorAccountId = AccountId.fromString(operatorId);
     this.operatorPrivateKey = PrivateKey.fromString(operatorKey);
     this.client.setOperator(this.operatorAccountId, this.operatorPrivateKey);
@@ -78,7 +87,7 @@ export class HederaEventService {
       }
       return transferReceipt;
     } catch (error) {
-      // Return a user-friendly error message
+      // Fix: Replace any with Error type
       throw new Error(
         `Vendor fee payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -149,6 +158,7 @@ export class HederaEventService {
         eventMetadata,
       };
     } catch (error) {
+      // Fix: Replace any with Error type
       throw new Error(
         `Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -201,6 +211,7 @@ export class HederaEventService {
         transactionId: tokenCreateResponse.transactionId.toString(),
       };
     } catch (error) {
+      // Fix: Replace any with Error type
       throw new Error(
         `Failed to create event tickets: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -283,6 +294,7 @@ export class HederaEventService {
         transactionId: mintResponse.transactionId.toString(),
       };
     } catch (error) {
+      // Fix: Replace any with Error type
       throw new Error(
         `Failed to purchase ticket: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -307,6 +319,7 @@ export class HederaEventService {
         tokens: balance.tokens ? Array.from(balance.tokens._map.entries()) : [],
       };
     } catch (error) {
+      // Fix: Replace any with Error type
       throw new Error(
         `Failed to get dApp balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

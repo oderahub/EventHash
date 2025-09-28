@@ -195,5 +195,46 @@
     "hederaTopicId": "0.0.6905512",
     "hederaTransactionId": "0.0.6866966@1758855037.933296474",
     "createdAt": 1758855047436
+  },
+  {
+    "id": "mg1h0nev4f9a74",
+    "name": "Lagos Music Concert",
+    "description": "Live music performance in Lagos",
+    "date": 1728000000000,
+    "location": "Lagos",
+    "price": 40,
+    "category": "Music",
+    "hederaEventId": "0.0.6913800",
+    "hederaTopicId": "0.0.6913800",
+    "hederaTransactionId": "0.0.6866966@1758929166.959206373",
+    "createdAt": 1758929177479
+  },
+  {
+    "id": "mg1hv6kn3dza7f",
+    "name": "Lagos Festival",
+    "description": "Fun festival in Lagos",
+    "date": 1728000000000,
+    "location": "Lagos",
+    "price": 40,
+    "category": "Festival",
+    "bannerUrl": "https://res.cloudinary.com/dcsuoee4b/image/upload/v1758930580/events/banners/s42diof17mefxxiar7gh.jpg",
+    "hederaEventId": "0.0.6913820",
+    "hederaTopicId": "0.0.6913820",
+    "hederaTransactionId": "0.0.6866966@1758930592.306726349",
+    "createdAt": 1758930601991
+  },
+  {
+    "id": "mg26n2ldciqiiy",
+    "name": "Lagos Music Concert",
+    "description": "Live music performance in Lagos",
+    "date": 1728000000000,
+    "location": "Lagos",
+    "price": 40,
+    "category": "Music",
+    "hederaEventId": "0.0.6914962",
+    "hederaTopicId": "0.0.6914962",
+    "hederaTransactionId": "0.0.6866966@1758972203.662250242",
+    "createdAt": 1758972213985,
+    "hederaTicketTokenId": "0.0.6914963"
   }
 ]

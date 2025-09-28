@@ -1,25 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
-
-// Add proper interface definitions
-interface DeployInfo {
-  eventId: string;
-  topicId: string;
-  transactionId: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data?: unknown;
-  error?: unknown;
-  url?: string;
-  onchain?: DeployInfo;
-}
-
-interface ApiError extends Error {
-  message: string;
-}
+import { useState, useRef } from 'react';
+import Image from 'next/image';
 
 type Draft = {
   name: string;
@@ -52,7 +34,12 @@ export default function VendorPage() {
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [deployInfo, setDeployInfo] = useState<DeployInfo | null>(null);
+  // Fix: Remove unused deployInfo variable or use it
+  const [deployInfo, setDeployInfo] = useState<{
+    eventId: string;
+    topicId: string;
+    transactionId: string;
+  } | null>(null);
 
   // helper
   const showToast = (type: 'success' | 'error', text: string, ms = 3000) => {
@@ -73,14 +60,15 @@ export default function VendorPage() {
       form.append('folder', 'events/banners');
 
       const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const data: ApiResponse = await res.json();
-      if (!res.ok || !data?.success) throw new Error((data?.error as string) || 'Upload failed');
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || 'Upload failed');
 
       setDraft((d) => ({ ...d, bannerUrl: data.url as string }));
       showToast('success', 'Banner uploaded successfully.');
-    } catch (err) {
-      const error = err as ApiError;
-      showToast('error', error?.message || 'Upload failed');
+    } catch (err: unknown) {
+      // Fix: Replace any with unknown
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      showToast('error', errorMessage);
     } finally {
       setUploading(false);
     }
@@ -95,7 +83,7 @@ export default function VendorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: aiPrompt }),
       });
-      const json: ApiResponse = await res.json();
+      const json = await res.json();
       if (!res.ok || !json?.success)
         throw new Error(json?.error ? JSON.stringify(json.error) : 'Extraction failed');
 
@@ -110,9 +98,10 @@ export default function VendorPage() {
         category: data.category ?? d.category,
       }));
       showToast('success', 'Draft auto-filled from AI extraction. Review and adjust if needed.');
-    } catch (err) {
-      const error = err as ApiError;
-      showToast('error', error?.message || 'Failed to extract draft');
+    } catch (err: unknown) {
+      // Fix: Replace any with unknown
+      const errorMessage = err instanceof Error ? err.message : 'Failed to extract draft';
+      showToast('error', errorMessage);
     } finally {
       setExtracting(false);
     }
@@ -145,7 +134,7 @@ export default function VendorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data: ApiResponse = await res.json();
+      const data = await res.json();
       if (!res.ok || !data?.success)
         throw new Error(data?.error ? JSON.stringify(data.error) : 'Failed to create event');
 
@@ -153,9 +142,10 @@ export default function VendorPage() {
         'success',
         'Draft saved! Event will appear in marketplace once we wire the marketplace view.',
       );
-    } catch (err) {
-      const error = err as ApiError;
-      showToast('error', error?.message || 'Failed to create event');
+    } catch (err: unknown) {
+      // Fix: Replace any with unknown
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create event';
+      showToast('error', errorMessage);
     } finally {
       setCreating(false);
     }
@@ -206,32 +196,25 @@ export default function VendorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data: ApiResponse = await res.json();
+      const data = await res.json();
 
       if (!res.ok || !data?.success) {
         throw new Error(data?.error ? JSON.stringify(data.error) : 'Deploy failed');
       }
 
-      // Fix: Properly handle the onchain data with type checking
-      if (data.onchain) {
-        setDeployInfo({
-          eventId: data.onchain.eventId || '',
-          topicId: data.onchain.topicId || '',
-          transactionId: data.onchain.transactionId || '',
-        });
-      } else {
-        // Fallback if onchain data is missing
-        setDeployInfo({
-          eventId: 'Unknown',
-          topicId: 'Unknown',
-          transactionId: 'Unknown',
-        });
-      }
+      // Save onchain IDs to show in confirmation panel
+      const onchain = data.onchain ?? {};
+      setDeployInfo({
+        eventId: onchain.eventId,
+        topicId: onchain.topicId,
+        transactionId: onchain.transactionId,
+      });
 
       showToast('success', 'Event deployed on-chain and saved! Hedera IDs attached.');
-    } catch (err) {
-      const error = err as ApiError;
-      showToast('error', error?.message || 'Failed to deploy event');
+    } catch (err: unknown) {
+      // Fix: Replace any with unknown
+      const errorMessage = err instanceof Error ? err.message : 'Failed to deploy event';
+      showToast('error', errorMessage);
     } finally {
       setCreating(false);
     }
@@ -248,26 +231,7 @@ export default function VendorPage() {
           {toast.text}
         </div>
       )}
-
       <h1 className="text-2xl font-semibold mb-6">Vendor Dashboard</h1>
-
-      {/* Display deployment info if available */}
-      {deployInfo && (
-        <div className="mb-6 glass rounded-xl p-4">
-          <h3 className="text-lg font-medium mb-2 text-green-600">Deployment Successful!</h3>
-          <div className="space-y-1 text-sm">
-            <div>
-              <span className="font-medium">Event ID:</span> {deployInfo.eventId}
-            </div>
-            <div>
-              <span className="font-medium">Topic ID:</span> {deployInfo.topicId}
-            </div>
-            <div>
-              <span className="font-medium">Transaction ID:</span> {deployInfo.transactionId}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Layout: AI assistant on the left, draft form on the right */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -394,19 +358,12 @@ export default function VendorPage() {
                   type="button"
                   onClick={onPickBanner}
                   disabled={uploading}
-                  className="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-60"
+                  className="px-4 py-2 glass rounded-lg disabled:opacity-60"
                 >
-                  {uploading ? 'Uploading…' : 'Upload Banner'}
+                  {uploading ? 'Uploading…' : 'Choose Banner'}
                 </button>
                 {draft.bannerUrl && (
-                  <a
-                    href={draft.bannerUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-neon-accent underline"
-                  >
-                    View uploaded image
-                  </a>
+                  <span className="text-sm text-green-600">✓ Banner uploaded</span>
                 )}
               </div>
               <input
@@ -425,7 +382,7 @@ export default function VendorPage() {
                 disabled={creating}
                 className="px-4 py-2 bg-warm-accent text-white rounded-lg disabled:opacity-60"
               >
-                {creating ? 'Saving…' : 'Create Event (Save Draft)'}
+                {creating ? 'Creating…' : 'Save Draft'}
               </button>
               <button
                 type="button"
@@ -433,7 +390,7 @@ export default function VendorPage() {
                 disabled={creating}
                 className="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-60"
               >
-                {creating ? 'Deploying…' : 'Create & Deploy (Hedera)'}
+                {creating ? 'Deploying…' : 'Deploy On-Chain'}
               </button>
             </div>
 
@@ -448,10 +405,11 @@ export default function VendorPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1">
               {draft.bannerUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={draft.bannerUrl}
                   alt="banner"
+                  width={400}
+                  height={192}
                   className="w-full h-48 object-cover rounded-lg"
                 />
               ) : (
@@ -485,6 +443,33 @@ export default function VendorPage() {
                   {draft.description || '—'}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deploy Info Panel - show if deployment successful */}
+      {deployInfo && (
+        <div className="mt-8 bg-green-50 border border-green-200 rounded-xl p-4">
+          <h3 className="text-lg font-semibold text-green-800 mb-3">✅ Deployment Successful!</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className="font-medium text-green-800">Event ID</div>
+              <code className="text-green-700 bg-green-100 px-2 py-1 rounded text-xs">
+                {deployInfo.eventId}
+              </code>
+            </div>
+            <div>
+              <div className="font-medium text-green-800">Topic ID</div>
+              <code className="text-green-700 bg-green-100 px-2 py-1 rounded text-xs">
+                {deployInfo.topicId}
+              </code>
+            </div>
+            <div>
+              <div className="font-medium text-green-800">Transaction ID</div>
+              <code className="text-green-700 bg-green-100 px-2 py-1 rounded text-xs">
+                {deployInfo.transactionId}
+              </code>
             </div>
           </div>
         </div>

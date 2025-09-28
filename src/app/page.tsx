@@ -9,14 +9,15 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&h=1080&fit=crop)',
+            backgroundImage:
+              'url(https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&h=1080&fit=crop)',
           }}
         />
         <div className="absolute inset-0" style={{ background: 'var(--hero-gradient)' }} />
-        
+
         <div className="relative z-10 text-center max-w-3xl mx-auto px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             Create, Discover, and Attend Events with{' '}
