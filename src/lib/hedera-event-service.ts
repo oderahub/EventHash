@@ -56,8 +56,8 @@ export class HederaEventService {
       network === 'mainnet'
         ? Client.forMainnet()
         : network === 'previewnet'
-          ? Client.forPreviewnet()
-          : Client.forTestnet();
+        ? Client.forPreviewnet()
+        : Client.forTestnet();
 
     this.operatorAccountId = AccountId.fromString(operatorId);
     this.operatorPrivateKey = PrivateKey.fromString(operatorKey);
@@ -87,7 +87,6 @@ export class HederaEventService {
       }
       return transferReceipt;
     } catch (error) {
-      // Fix: Replace any with Error type
       throw new Error(
         `Vendor fee payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -158,7 +157,6 @@ export class HederaEventService {
         eventMetadata,
       };
     } catch (error) {
-      // Fix: Replace any with Error type
       throw new Error(
         `Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -211,7 +209,6 @@ export class HederaEventService {
         transactionId: tokenCreateResponse.transactionId.toString(),
       };
     } catch (error) {
-      // Fix: Replace any with Error type
       throw new Error(
         `Failed to create event tickets: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -294,9 +291,83 @@ export class HederaEventService {
         transactionId: mintResponse.transactionId.toString(),
       };
     } catch (error) {
-      // Fix: Replace any with Error type
       throw new Error(
         `Failed to purchase ticket: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * Mint a single ticket NFT and transfer to buyer, assuming the buyer is already associated
+   * with the ticket token. This avoids needing the buyer's private key on the server.
+   * Also logs TICKET_PURCHASED to the event's HCS topic.
+   */
+  async mintAndTransferTicketAssumingAssociation(
+    eventId: string,
+    ticketTokenId: string,
+    buyerAccountId: string,
+    ticketPrice: number,
+  ) {
+    try {
+      const tokenId = TokenId.fromString(ticketTokenId);
+      const buyerAccount = AccountId.fromString(buyerAccountId);
+
+      // 1. Mint new NFT ticket (no buyer signature required)
+      const mintTx = new TokenMintTransaction()
+        .setTokenId(tokenId)
+        .setMetadata([
+          Buffer.from(
+            JSON.stringify({
+              eventId,
+              ticketType: 'standard',
+              mintedAt: Date.now(),
+            }),
+          ),
+        ])
+        .setMaxTransactionFee(new Hbar(10));
+
+      const mintResponse = await mintTx.execute(this.client);
+      const mintReceipt = await mintResponse.getReceipt(this.client);
+      const serialNumber = mintReceipt.serials[0].toNumber();
+
+      // 2. Transfer NFT to buyer (assumes buyer has already associated the token)
+      const transferTx = await new TransferTransaction()
+        .addNftTransfer(tokenId, serialNumber, this.operatorAccountId, buyerAccount)
+        .freezeWith(this.client)
+        .sign(this.operatorPrivateKey);
+
+      await transferTx.execute(this.client);
+
+      // 3. Log purchase to event topic via HCS
+      const purchaseMessage = JSON.stringify({
+        type: 'TICKET_PURCHASED',
+        data: {
+          eventId,
+          ticketTokenId,
+          ticketSerialNumber: serialNumber,
+          buyer: buyerAccountId,
+          price: ticketPrice,
+          purchaseDate: Date.now(),
+        },
+        timestamp: Date.now(),
+      });
+
+      const messageSubmitTx = new TopicMessageSubmitTransaction()
+        .setTopicId(TopicId.fromString(eventId))
+        .setMessage(purchaseMessage)
+        .setMaxTransactionFee(new Hbar(2));
+
+      await messageSubmitTx.execute(this.client);
+
+      return {
+        ticketSerialNumber: serialNumber,
+        transactionId: mintResponse.transactionId.toString(),
+      };
+    } catch (error) {
+      throw new Error(
+        `Failed to mint and transfer ticket (assuming association): ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       );
     }
   }
@@ -319,7 +390,6 @@ export class HederaEventService {
         tokens: balance.tokens ? Array.from(balance.tokens._map.entries()) : [],
       };
     } catch (error) {
-      // Fix: Replace any with Error type
       throw new Error(
         `Failed to get dApp balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

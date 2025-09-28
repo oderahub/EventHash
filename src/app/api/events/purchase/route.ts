@@ -35,7 +35,7 @@ async function readEvents(): Promise<Event[]> {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (err: unknown) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
       await fs.mkdir(path.dirname(dataFile), { recursive: true });
       await fs.writeFile(dataFile, '[]', 'utf-8');
       return [];
@@ -54,16 +54,24 @@ async function verifyPayment(
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Mirror query failed: ${res.status}`);
   const json = await res.json();
+
+  // Mirror response can be either { transactions: [...] } or a direct object
   const tx = (json.transactions && json.transactions[0]) || json;
   const transfers = tx?.transfers || [];
   if (!Array.isArray(transfers)) throw new Error('Mirror payload missing transfers');
+
   const tinybar = (hbar: number) => Math.floor(hbar * 100_000_000);
+
   const sent = transfers.find((t: Transfer) => t.account === buyer)?.amount || 0;
   const received = transfers.find((t: Transfer) => t.account === operator)?.amount || 0;
+
+  // sent should be negative (buyer sends), received should be positive (operator receives)
   if (sent >= 0 || received <= 0) throw new Error('Payment transfer direction invalid');
+
   if (Math.abs(sent) < tinybar(minHbar) || received < tinybar(minHbar)) {
     throw new Error('Payment amount below required price');
   }
+
   return true;
 }
 
@@ -107,25 +115,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Ensure ticketPrice is present and a valid number
+    if (ticketPrice === undefined || Number.isNaN(Number(ticketPrice))) {
+      return NextResponse.json(
+        { success: false, error: 'Ticket price is missing or invalid' },
+        { status: 400 },
+      );
+    }
+
     // 1) Verify payment on-chain via Mirror Node
     await verifyPayment(paymentTxId, buyerAccountId, operator, Number(ticketPrice));
 
     // 2) Mint + transfer assuming buyer already associated (front-end must associate via wallet)
     const service = new HederaEventService();
-    let result;
-    if (typeof service.mintAndTransferTicketAssumingAssociation === 'function') {
-      result = await service.mintAndTransferTicketAssumingAssociation(
-        eventId,
-        ticketTokenId,
-        buyerAccountId,
-        Number(ticketPrice),
-      );
-    } else {
-      // Fallback: use purchaseTicket (will attempt to associate; requires buyer key — not recommended)
-      throw new Error(
-        'Association method missing. Please update HederaEventService with mintAndTransferTicketAssumingAssociation().',
-      );
-    }
+    const result = await service.mintAndTransferTicketAssumingAssociation(
+      eventId,
+      ticketTokenId,
+      buyerAccountId,
+      Number(ticketPrice),
+    );
 
     return NextResponse.json(
       {
