@@ -1,42 +1,43 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { ChatInterface } from '@/components/chat-interface'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ChatInterface } from '@/components/chat-interface';
+import { MessageCircle, Sparkles } from 'lucide-react';
 
 interface EventItem {
-  id: string
-  name: string
-  date: number
-  location: string
-  price: number
-  category?: string
-  bannerUrl?: string
-  hederaEventId?: string
-  hederaTopicId?: string
-  hederaTicketTokenId?: string
+  id: string;
+  name: string;
+  date: number;
+  location: string;
+  price: number;
+  category?: string;
+  bannerUrl?: string;
+  hederaEventId?: string;
+  hederaTopicId?: string;
+  hederaTicketTokenId?: string;
 }
 
 export default function Home() {
-  const [events, setEvents] = useState<EventItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/events', { cache: 'no-store' })
-        const json = await res.json()
-        if (res.ok && json?.success) setEvents(json.data || [])
+        const res = await fetch('/api/events', { cache: 'no-store' });
+        const json = await res.json();
+        if (res.ok && json?.success) setEvents(json.data || []);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    load()
-  }, [])
+    };
+    load();
+  }, []);
 
   const EventCard = ({ evt }: { evt: EventItem }) => {
-    const eventId = evt.hederaEventId || evt.hederaTopicId || evt.id
+    const eventId = evt.hederaEventId || evt.hederaTopicId || evt.id;
     const dateStr = new Date(evt.date).toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
@@ -44,7 +45,7 @@ export default function Home() {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    })
+    });
 
     return (
       <Link
@@ -61,7 +62,9 @@ export default function Home() {
               className="object-cover"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">🎫</div>
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+              🎫
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
@@ -75,8 +78,8 @@ export default function Home() {
           </div>
         </div>
       </Link>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -110,11 +113,13 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Discover */}
       <section id="discover" className="relative py-16">
         {/* Warm gradient background to match hero overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white" aria-hidden />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-orange-50 via-white to-white"
+          aria-hidden
+        />
 
         <div className="relative px-4 max-w-7xl mx-auto mb-6 text-center">
           <h2 className="text-2xl md:text-3xl font-semibold">Discover events</h2>
@@ -155,10 +160,38 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="py-16 bg-gradient-to-br from-orange-50 via-white to-orange-100">
+        <div className="max-w-4xl mx-auto text-center px-4">
+          <div className="relative inline-block mb-6">
+            <div className="absolute inset-0 bg-orange-400 rounded-full blur-xl opacity-30 animate-pulse" />
+            <div className="relative bg-white p-4 rounded-full shadow-xl border border-orange-200">
+              <MessageCircle className="w-12 h-12 text-orange-500" />
+              <Sparkles className="w-4 h-4 text-orange-400 absolute -top-1 -right-1 animate-bounce" />
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Meet <span className="text-orange-500">HashBot AI</span>
+          </h2>
+
+          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            Your intelligent event assistant that understands natural language. Create events, buy
+            tickets, and manage everything through simple conversations.
+          </p>
+          <button
+            onClick={() => {
+              /* Scroll to chat or open it */
+            }}
+            className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          >
+            Start Chatting with HashBot
+          </button>
+        </div>
+      </section>
       {/* Chat */}
       <div className="max-w-7xl mx-auto px-4">
         <ChatInterface />
       </div>
     </div>
-  )
+  );
 }

@@ -1,0 +1,71 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background glow effect -->
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6633FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00FF99;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF3366;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#333333;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main logo icon -->
+  <g transform="translate(8, 8)">
+    <!-- Outer hexagon (blockchain) -->
+    <path d="M22 4 L34 11 L34 25 L22 32 L10 25 L10 11 Z" 
+          stroke="url(#primaryGradient)" 
+          stroke-width="2" 
+          fill="none" 
+          opacity="0.8"/>
+    
+    <!-- Inner neural network nodes -->
+    <circle cx="16" cy="14" r="2" fill="#6633FF" opacity="0.9"/>
+    <circle cx="28" cy="14" r="2" fill="#00FF99" opacity="0.9"/>
+    <circle cx="22" cy="22" r="2" fill="#FF3366" opacity="0.9"/>
+    <circle cx="22" cy="8" r="1.5" fill="#6633FF" opacity="0.7"/>
+    
+    <!-- Neural connections -->
+    <path d="M16 14 L28 14 M16 14 L22 22 M28 14 L22 22 M22 8 L16 14 M22 8 L28 14" 
+          stroke="url(#primaryGradient)" 
+          stroke-width="1" 
+          opacity="0.6"/>
+    
+    <!-- Central hash symbol -->
+    <g transform="translate(20, 16)">
+      <path d="M-3 -2 L3 -2 M-3 2 L3 2 M-1 -4 L-1 4 M1 -4 L1 4" 
+            stroke="#00FF99" 
+            stroke-width="1.5" 
+            stroke-linecap="round"/>
+    </g>
+  </g>
+  
+  <!-- Company name -->
+  <g transform="translate(52, 20)">
+    <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" 
+          font-size="18" font-weight="700" fill="url(#textGradient)">
+      Event
+    </text>
+    <text x="0" y="20" font-family="system-ui, -apple-system, sans-serif" 
+          font-size="18" font-weight="700" fill="url(#primaryGradient)">
+      Hash
+    </text>
+  </g>
+  
+  <!-- Subtle AI indicator -->
+  <g transform="translate(140, 15)">
+    <circle cx="0" cy="0" r="3" fill="#00FF99" opacity="0.3">
+      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="0" cy="0" r="1" fill="#00FF99"/>
+  </g>
+</svg>
