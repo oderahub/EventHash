@@ -289,6 +289,6 @@ This proof-of-concept demonstrates the potential of AI-blockchain integration. C
 
 ## 📄 License
 
-## MIT License
+## Unlicensed
 
 **Built with ❤️ using Hedera's enterprise blockchain infrastructure and cutting-edge AI technology.**
