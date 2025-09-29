@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChatInterface } from '@/components/chat-interface';
+import { ChatInterface, ChatInterfaceRef } from '@/components/chat-interface';
 import { MessageCircle, Sparkles } from 'lucide-react';
 
 interface EventItem {
@@ -22,6 +22,7 @@ interface EventItem {
 export default function Home() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const chatInterfaceRef = useRef<ChatInterfaceRef>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -35,6 +36,10 @@ export default function Home() {
     };
     load();
   }, []);
+
+  const handleOpenChat = () => {
+    chatInterfaceRef.current?.openChat();
+  };
 
   const EventCard = ({ evt }: { evt: EventItem }) => {
     const eventId = evt.hederaEventId || evt.hederaTopicId || evt.id;
@@ -113,6 +118,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+
       {/* Discover */}
       <section id="discover" className="relative py-16">
         {/* Warm gradient background to match hero overlay */}
@@ -160,6 +166,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* HashBot AI Section */}
       <section className="py-16 bg-gradient-to-br from-orange-50 via-white to-orange-100">
         <div className="max-w-4xl mx-auto text-center px-4">
           <div className="relative inline-block mb-6">
@@ -178,20 +185,18 @@ export default function Home() {
             Your intelligent event assistant that understands natural language. Create events, buy
             tickets, and manage everything through simple conversations.
           </p>
+
           <button
-            onClick={() => {
-              /* Scroll to chat or open it */
-            }}
+            onClick={handleOpenChat}
             className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             Start Chatting with HashBot
           </button>
         </div>
       </section>
-      {/* Chat */}
-      <div className="max-w-7xl mx-auto px-4">
-        <ChatInterface />
-      </div>
+
+      {/* Chat Interface */}
+      <ChatInterface ref={chatInterfaceRef} />
     </div>
   );
 }
